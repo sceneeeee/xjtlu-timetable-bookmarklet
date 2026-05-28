@@ -1,7 +1,12 @@
 import { downloadIcs } from "../lib/downloadIcs";
 import { expandOccurrences } from "../lib/expandOccurrences";
 import { generateIcs } from "../lib/generateIcs";
-import { parseTimetableFromDocument, parseTimetableFromPage } from "../lib/parseTimetable";
+import {
+  formatTimetableDetectionDebug,
+  parseTimetableFromDocument,
+  parseTimetableFromPageWithDebug,
+  type TimetableDetectionDebug
+} from "../lib/parseTimetable";
 import type { TimetableEvent } from "../lib/types";
 
 declare const __XJTLU_BOOKMARKLET_AUTO_RUN__: boolean;
@@ -11,11 +16,21 @@ const DEFAULT_LAST_WEEK = "13";
 const DEFAULT_FILENAME = "xjtlu_timetable.ics";
 const UI_NEWLINE = String.fromCharCode(10);
 
-export async function runXjtluTimetableExporter(doc: Document = document): Promise<void> {
-  const events = getEvents(doc);
+interface RunOptions {
+  debug?: boolean;
+}
+
+interface EventLookupResult {
+  events: TimetableEvent[];
+  debug?: TimetableDetectionDebug;
+}
+
+export async function runXjtluTimetableExporter(doc: Document = document, options: RunOptions = {}): Promise<void> {
+  const result = getEvents(doc);
+  const events = result.events;
 
   if (events.length === 0) {
-    window.alert("No timetable found. Please open your XJTLU e-Bridge timetable page first.");
+    window.alert(formatNoTimetableAlert(result.debug, options.debug || doc === document));
     return;
   }
 
@@ -85,8 +100,35 @@ export function startXjtluTimetableExporter(): void {
   });
 }
 
-function getEvents(doc: Document): TimetableEvent[] {
-  return doc === document ? parseTimetableFromPage() : parseTimetableFromDocument(doc);
+export function startXjtluTimetableExporterDebug(): void {
+  void runXjtluTimetableExporter(document, { debug: true }).catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    window.alert(`XJTLU timetable export failed. ${message}`);
+  });
+}
+
+function getEvents(doc: Document): EventLookupResult {
+  if (doc === document) {
+    const result = parseTimetableFromPageWithDebug();
+    return {
+      events: result.events,
+      debug: result.debug
+    };
+  }
+
+  return {
+    events: parseTimetableFromDocument(doc)
+  };
+}
+
+function formatNoTimetableAlert(debug: TimetableDetectionDebug | undefined, showDebug: boolean): string {
+  const message = "No timetable found. Please open your XJTLU e-Bridge timetable page first.";
+
+  if (!showDebug || !debug) {
+    return message;
+  }
+
+  return [message, "", formatTimetableDetectionDebug(debug)].join(UI_NEWLINE);
 }
 
 function isIsoDate(value: string): boolean {
@@ -101,7 +143,9 @@ function isIsoDate(value: string): boolean {
 if (typeof window !== "undefined") {
   window.XjtluTimetableExporter = {
     run: runXjtluTimetableExporter,
-    start: startXjtluTimetableExporter
+    runDebug: (doc?: Document) => runXjtluTimetableExporter(doc ?? document, { debug: true }),
+    start: startXjtluTimetableExporter,
+    startDebug: startXjtluTimetableExporterDebug
   };
 
   if (typeof __XJTLU_BOOKMARKLET_AUTO_RUN__ !== "undefined" && __XJTLU_BOOKMARKLET_AUTO_RUN__) {
@@ -113,7 +157,9 @@ declare global {
   interface Window {
     XjtluTimetableExporter?: {
       run: typeof runXjtluTimetableExporter;
+      runDebug: (doc?: Document) => Promise<void>;
       start: typeof startXjtluTimetableExporter;
+      startDebug: typeof startXjtluTimetableExporterDebug;
     };
   }
 }
