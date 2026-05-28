@@ -1,5 +1,14 @@
 # XJTLU Timetable Bookmarklet
 
+[![Release](https://img.shields.io/github/v/release/sceneeeee/xjtlu-timetable-bookmarklet?include_prereleases&label=release)](https://github.com/sceneeeee/xjtlu-timetable-bookmarklet/releases)
+[![License](https://img.shields.io/github/license/sceneeeee/xjtlu-timetable-bookmarklet)](LICENSE)
+![Node.js](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-5.x-646CFF?logo=vite&logoColor=white)
+![Vitest](https://img.shields.io/badge/tested%20with-Vitest-6E9F18?logo=vitest&logoColor=white)
+![iOS Safari Bookmarklet](https://img.shields.io/badge/iOS%20Safari-bookmarklet-000000?logo=safari&logoColor=white)
+![Serverless](https://img.shields.io/badge/serverless-local%20browser-0A7EA4)
+
 一个在 iPhone Safari 里使用的书签脚本，用来把 XJTLU e-Bridge 课表导出为 iCalendar `.ics` 文件。
 
 这不是原生 iOS App，也不是 App Store Safari 扩展。它是一个 iOS Safari bookmarklet（书签脚本）工作流：你打开 e-Bridge 课表页面，点一下 Safari 书签，脚本就在浏览器本地读取课表并生成日历文件。整个过程无服务器，课表数据不会上传。
