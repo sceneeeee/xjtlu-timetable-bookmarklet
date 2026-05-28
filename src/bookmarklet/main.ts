@@ -15,6 +15,8 @@ const DEFAULT_WEEK_1_MONDAY = "2026-03-02";
 const DEFAULT_LAST_WEEK = "13";
 const DEFAULT_FILENAME = "xjtlu_timetable.ics";
 const UI_NEWLINE = String.fromCharCode(10);
+const OPEN_FRAME_MESSAGE =
+  "The timetable is loaded inside a protected XJTLU frame. Open the real timetable page directly? After it loads, run the bookmarklet again.";
 
 interface RunOptions {
   debug?: boolean;
@@ -30,6 +32,13 @@ export async function runXjtluTimetableExporter(doc: Document = document, option
   const events = result.events;
 
   if (events.length === 0) {
+    const frameUrl = doc === document ? findBestUsableFrameUrl(document) : undefined;
+
+    if (frameUrl && window.confirm(OPEN_FRAME_MESSAGE)) {
+      window.location.href = frameUrl;
+      return;
+    }
+
     window.alert(formatNoTimetableAlert(result.debug, options.debug || doc === document));
     return;
   }
@@ -129,6 +138,105 @@ function formatNoTimetableAlert(debug: TimetableDetectionDebug | undefined, show
   }
 
   return [message, "", formatTimetableDetectionDebug(debug)].join(UI_NEWLINE);
+}
+
+export function findBestUsableFrameUrl(doc: Document = document): string | undefined {
+  const urls = collectUsableFrameUrls(doc, new Set<Document>());
+  const timetablePlusUrl = urls.find(isTimetablePlusUrl);
+
+  return timetablePlusUrl ?? urls[0];
+}
+
+export function toUsableFrameUrl(frame: Element, baseUrl: string): string | undefined {
+  const rawUrl = getFrameRawUrl(frame);
+
+  if (!rawUrl) {
+    return undefined;
+  }
+
+  try {
+    const url = new URL(rawUrl, baseUrl);
+    const protocol = url.protocol.toLowerCase();
+
+    if (protocol !== "http:" && protocol !== "https:") {
+      return undefined;
+    }
+
+    if (url.href === "about:blank") {
+      return undefined;
+    }
+
+    return url.href;
+  } catch {
+    return undefined;
+  }
+}
+
+function collectUsableFrameUrls(doc: Document, visited: Set<Document>): string[] {
+  if (visited.has(doc)) {
+    return [];
+  }
+
+  visited.add(doc);
+
+  const urls: string[] = [];
+
+  for (const frame of Array.from(doc.querySelectorAll("iframe, frame"))) {
+    const url = toUsableFrameUrl(frame, doc.location?.href ?? window.location.href);
+
+    if (url) {
+      urls.push(url);
+    }
+
+    try {
+      const frameDocument = getFrameDocument(frame);
+
+      if (frameDocument && !visited.has(frameDocument)) {
+        urls.push(...collectUsableFrameUrls(frameDocument, visited));
+      }
+    } catch {
+      // Cross-origin frames can still expose a usable src URL, but not their DOM.
+    }
+  }
+
+  return dedupeStrings(urls).sort((left, right) => {
+    const leftPreferred = isTimetablePlusUrl(left);
+    const rightPreferred = isTimetablePlusUrl(right);
+
+    if (leftPreferred === rightPreferred) {
+      return 0;
+    }
+
+    return leftPreferred ? -1 : 1;
+  });
+}
+
+function getFrameRawUrl(frame: Element): string {
+  const attr = frame.getAttribute("src");
+
+  if (attr !== null) {
+    return attr.trim();
+  }
+
+  const frameElement = frame as HTMLIFrameElement | HTMLFrameElement;
+  return frameElement.src?.trim() ?? "";
+}
+
+function getFrameDocument(frame: Element): Document | undefined {
+  const frameElement = frame as HTMLIFrameElement | HTMLFrameElement;
+  return frameElement.contentDocument ?? frameElement.contentWindow?.document;
+}
+
+function isTimetablePlusUrl(value: string): boolean {
+  try {
+    return new URL(value).hostname.toLowerCase() === "timetableplus.xjtlu.edu.cn";
+  } catch {
+    return false;
+  }
+}
+
+function dedupeStrings(values: string[]): string[] {
+  return [...new Set(values)];
 }
 
 function isIsoDate(value: string): boolean {
