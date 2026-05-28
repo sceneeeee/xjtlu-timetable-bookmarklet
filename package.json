@@ -7,7 +7,7 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sceneeeee/xjtlu-timetable-importer-ios.git"
+    "url": "git+https://github.com/sceneeeee/xjtlu-timetable-bookmarklet.git"
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
