@@ -1,0 +1,30 @@
+{
+  "name": "xjtlu-timetable-exporter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A no-server bookmarklet-style tool that exports XJTLU e-Bridge timetables to iCalendar .ics files.",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sceneeeee/xjtlu-timetable-importer-ios.git"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "npm run build:bookmarklet && npm run build:bookmarklet:min",
+    "build:bookmarklet": "vite build --mode bookmarklet",
+    "build:bookmarklet:min": "vite build --mode bookmarklet-min",
+    "print:bookmarklet": "node scripts/print-bookmarklet.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.1",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.4"
+  }
+}
